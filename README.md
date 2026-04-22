@@ -10,6 +10,7 @@
 - 后端通过 `/api/radio/generate` 生成推荐队列
 - 播放器已经接了真实 `<audio>`，只要歌曲数据里有 `audioUrl` 就能播放
 - 没有 `audioUrl` 的歌只能推荐，不能播放
+- 天气场景使用 Open-Meteo，不需要 API key
 
 整体架构看 [ARCHITECTURE.md](/Users/kefei/Desktop/vibe%20coding/ARCHITECTURE.md)。那份文档对应“播放器界面 / 本地服务 / 几个 API”的施工思路，页面本身不照着架构图排版。
 

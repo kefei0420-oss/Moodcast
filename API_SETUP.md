@@ -66,24 +66,15 @@ APPLE_PRIVATE_KEY
 
 建议项目早期先用 CSV / 手动导入，等产品逻辑跑通后再接网易云。
 
-## OpenWeather
+## Open-Meteo
 
 适合：让 DJ 知道晴天、雨天、温度、城市。
 
-需要：
+不需要 API key。当前项目使用 Open-Meteo：
 
 ```text
-OPENWEATHER_API_KEY
 WEATHER_CITY
 ```
-
-后端可以做：
-
-```text
-GET /api/weather?city=Shanghai
-```
-
-然后把天气加入 `/api/radio/generate` 的推荐参数。
 
 当前项目已经支持：
 
@@ -92,14 +83,30 @@ GET /api/weather
 GET /api/now
 ```
 
+然后把天气加入 `/api/radio/generate` 的推荐参数。
+
 你只需要在 Render 里添加环境变量：
+
+```text
+WEATHER_CITY=Shanghai
+```
+
+保存并重新部署后，页面里的“今天的场景信号”会显示真实天气，推荐理由里也会加入天气标签。
+
+Open-Meteo 官方说明：非商业/原型阶段可以免费使用，不需要 API key。城市名会先通过 Geocoding API 转成经纬度，再调用 Forecast API。
+
+如果以后做正式商业产品，再评估它们的商业授权或换成付费天气服务。
+
+## OpenWeather
+
+OpenWeather 也能用，但你已经看到它可能要求付费或绑卡。所以当前项目先不用它。
+
+如果未来要换回 OpenWeather，再添加：
 
 ```text
 OPENWEATHER_API_KEY=你的 OpenWeather key
 WEATHER_CITY=Shanghai
 ```
-
-保存并重新部署后，页面里的“今天的场景信号”会显示真实天气，推荐理由里也会加入天气标签。
 
 ## AI DJ
 

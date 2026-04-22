@@ -42,9 +42,9 @@ const connectors = [
   },
   {
     key: "weather",
-    name: "OpenWeather",
-    status: process.env.OPENWEATHER_API_KEY ? "ready" : "todo",
-    description: "接天气后可以自动识别雨天、夜晚、通勤、运动等场景。",
+    name: "Open-Meteo",
+    status: "ready",
+    description: "使用无需 API key 的 Open-Meteo 天气接口，自动识别雨天、晴天、冷热等场景。",
   },
   {
     key: "voice",
@@ -145,54 +145,82 @@ function getPartOfDay(hour) {
 }
 
 async function fetchWeather() {
-  const apiKey = process.env.OPENWEATHER_API_KEY;
   const city = process.env.WEATHER_CITY || "Shanghai";
 
-  if (!apiKey) {
-    return {
-      source: "mock",
-      city,
-      summary: "未连接天气 API",
-      tags: [],
-    };
+  const geoUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
+  geoUrl.searchParams.set("name", city);
+  geoUrl.searchParams.set("count", "1");
+  geoUrl.searchParams.set("language", "zh");
+  geoUrl.searchParams.set("format", "json");
+
+  const geoResponse = await fetch(geoUrl);
+  if (!geoResponse.ok) {
+    throw new Error(`Open-Meteo geocoding ${geoResponse.status}`);
   }
 
-  const weatherUrl = new URL("https://api.openweathermap.org/data/2.5/weather");
-  weatherUrl.searchParams.set("q", city);
-  weatherUrl.searchParams.set("appid", apiKey);
-  weatherUrl.searchParams.set("units", "metric");
-  weatherUrl.searchParams.set("lang", "zh_cn");
-
-  const response = await fetch(weatherUrl);
-  if (!response.ok) {
-    throw new Error(`OpenWeather ${response.status}`);
+  const geoData = await geoResponse.json();
+  const location = geoData.results?.[0];
+  if (!location) {
+    throw new Error(`找不到城市：${city}`);
   }
 
-  const data = await response.json();
-  const main = data.weather?.[0]?.main || "";
-  const description = data.weather?.[0]?.description || "未知天气";
-  const temp = Math.round(data.main?.temp);
-  const humidity = data.main?.humidity;
+  const weatherUrl = new URL("https://api.open-meteo.com/v1/forecast");
+  weatherUrl.searchParams.set("latitude", String(location.latitude));
+  weatherUrl.searchParams.set("longitude", String(location.longitude));
+  weatherUrl.searchParams.set("current", "temperature_2m,relative_humidity_2m,precipitation,weather_code,cloud_cover,wind_speed_10m");
+  weatherUrl.searchParams.set("timezone", "auto");
+
+  const weatherResponse = await fetch(weatherUrl);
+  if (!weatherResponse.ok) {
+    throw new Error(`Open-Meteo forecast ${weatherResponse.status}`);
+  }
+
+  const data = await weatherResponse.json();
+  const current = data.current || {};
+  const weatherCode = Number(current.weather_code);
+  const temp = Math.round(Number(current.temperature_2m));
+  const humidity = Number(current.relative_humidity_2m);
+  const precipitation = Number(current.precipitation || 0);
+  const cloudCover = Number(current.cloud_cover || 0);
+  const description = describeWeatherCode(weatherCode, cloudCover, precipitation);
   const tags = [];
 
-  if (/Rain|Drizzle|Thunderstorm/i.test(main)) tags.push("雨天", "安静", "夜晚");
-  if (/Clear/i.test(main)) tags.push("晴朗", "轻快");
-  if (/Clouds/i.test(main)) tags.push("阴天", "温柔");
+  if (precipitation > 0 || [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(weatherCode)) tags.push("雨天", "安静", "夜晚");
+  if ([0, 1].includes(weatherCode) && cloudCover < 35) tags.push("晴朗", "轻快");
+  if (cloudCover >= 70 || [2, 3, 45, 48].includes(weatherCode)) tags.push("阴天", "温柔");
   if (Number.isFinite(temp) && temp <= 10) tags.push("冬天", "温柔");
   if (Number.isFinite(temp) && temp >= 28) tags.push("夏天", "清新");
 
   return {
-    source: "openweather",
-    city: data.name || city,
-    summary: `${data.name || city} · ${description} · ${temp}°C · 湿度 ${humidity}%`,
+    source: "open-meteo",
+    city: location.name || city,
+    summary: `${location.name || city} · ${description} · ${temp}°C · 湿度 ${humidity}%`,
     tags,
     raw: {
-      main,
+      weatherCode,
       description,
       temp,
       humidity,
+      precipitation,
+      cloudCover,
     },
   };
+}
+
+function describeWeatherCode(code, cloudCover, precipitation) {
+  if (precipitation > 0) return "有降水";
+  if ([0].includes(code)) return "晴";
+  if ([1].includes(code)) return "大部晴朗";
+  if ([2].includes(code)) return "局部多云";
+  if ([3].includes(code)) return "阴";
+  if ([45, 48].includes(code)) return "雾";
+  if ([51, 53, 55].includes(code)) return "毛毛雨";
+  if ([61, 63, 65].includes(code)) return "雨";
+  if ([71, 73, 75, 77].includes(code)) return "雪";
+  if ([80, 81, 82].includes(code)) return "阵雨";
+  if ([95, 96, 99].includes(code)) return "雷雨";
+  if (cloudCover >= 70) return "多云";
+  return "天气稳定";
 }
 
 async function getNowContext() {
