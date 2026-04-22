@@ -74,6 +74,7 @@ APPLE_PRIVATE_KEY
 
 ```text
 OPENWEATHER_API_KEY
+WEATHER_CITY
 ```
 
 后端可以做：
@@ -83,6 +84,22 @@ GET /api/weather?city=Shanghai
 ```
 
 然后把天气加入 `/api/radio/generate` 的推荐参数。
+
+当前项目已经支持：
+
+```text
+GET /api/weather
+GET /api/now
+```
+
+你只需要在 Render 里添加环境变量：
+
+```text
+OPENWEATHER_API_KEY=你的 OpenWeather key
+WEATHER_CITY=Shanghai
+```
+
+保存并重新部署后，页面里的“今天的场景信号”会显示真实天气，推荐理由里也会加入天气标签。
 
 ## AI DJ
 

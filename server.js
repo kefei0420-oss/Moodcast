@@ -8,6 +8,7 @@ const SAMPLE_PATH = path.join(__dirname, "chinese-pop-playlist.csv");
 
 let playlist = [];
 let lastQueue = [];
+let lastWeather = null;
 
 const moodTags = {
   focus: ["专注", "安静", "环境", "氛围", "冷感"],
@@ -134,13 +135,97 @@ function scoreSong(song, preferredTags, targetEnergy, promptText) {
   return tagScore + energyScore + promptScore + playableBoost + Math.random() * 4;
 }
 
+function getPartOfDay(hour) {
+  if (hour < 6) return "深夜";
+  if (hour < 11) return "早晨";
+  if (hour < 14) return "中午";
+  if (hour < 18) return "下午";
+  if (hour < 22) return "夜晚";
+  return "深夜";
+}
+
+async function fetchWeather() {
+  const apiKey = process.env.OPENWEATHER_API_KEY;
+  const city = process.env.WEATHER_CITY || "Shanghai";
+
+  if (!apiKey) {
+    return {
+      source: "mock",
+      city,
+      summary: "未连接天气 API",
+      tags: [],
+    };
+  }
+
+  const weatherUrl = new URL("https://api.openweathermap.org/data/2.5/weather");
+  weatherUrl.searchParams.set("q", city);
+  weatherUrl.searchParams.set("appid", apiKey);
+  weatherUrl.searchParams.set("units", "metric");
+  weatherUrl.searchParams.set("lang", "zh_cn");
+
+  const response = await fetch(weatherUrl);
+  if (!response.ok) {
+    throw new Error(`OpenWeather ${response.status}`);
+  }
+
+  const data = await response.json();
+  const main = data.weather?.[0]?.main || "";
+  const description = data.weather?.[0]?.description || "未知天气";
+  const temp = Math.round(data.main?.temp);
+  const humidity = data.main?.humidity;
+  const tags = [];
+
+  if (/Rain|Drizzle|Thunderstorm/i.test(main)) tags.push("雨天", "安静", "夜晚");
+  if (/Clear/i.test(main)) tags.push("晴朗", "轻快");
+  if (/Clouds/i.test(main)) tags.push("阴天", "温柔");
+  if (Number.isFinite(temp) && temp <= 10) tags.push("冬天", "温柔");
+  if (Number.isFinite(temp) && temp >= 28) tags.push("夏天", "清新");
+
+  return {
+    source: "openweather",
+    city: data.name || city,
+    summary: `${data.name || city} · ${description} · ${temp}°C · 湿度 ${humidity}%`,
+    tags,
+    raw: {
+      main,
+      description,
+      temp,
+      humidity,
+    },
+  };
+}
+
+async function getNowContext() {
+  const now = new Date();
+  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][now.getDay()];
+  lastWeather = await fetchWeather().catch((error) => ({
+    source: "error",
+    city: process.env.WEATHER_CITY || "Shanghai",
+    summary: `天气 API 暂时失败：${error.message}`,
+    tags: [],
+  }));
+
+  return {
+    iso: now.toISOString(),
+    time: now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false }),
+    weekday,
+    partOfDay: getPartOfDay(now.getHours()),
+    weather: lastWeather,
+    state: {
+      playlistCount: playlist.length,
+      queueCount: lastQueue.length,
+    },
+  };
+}
+
 function generateRadio({ mood, energy, prompt }) {
   if (!playlist.length) {
     playlist = parsePlaylist(fs.readFileSync(SAMPLE_PATH, "utf8"));
   }
 
   const targetEnergy = Number(energy || 55);
-  const preferredTags = moodTags[mood] || moodTags.focus;
+  const weatherTags = lastWeather?.tags || [];
+  const preferredTags = [...(moodTags[mood] || moodTags.focus), ...weatherTags];
   const queue = playlist
     .map((song) => ({ ...song, score: scoreSong(song, preferredTags, targetEnergy, prompt) }))
     .sort((a, b) => b.score - a.score)
@@ -151,35 +236,7 @@ function generateRadio({ mood, energy, prompt }) {
 
   return {
     queue,
-    reason: `这次优先选择「${preferredTags.slice(0, 4).join("、")}」气质，目标能量 ${targetEnergy}。有 audioUrl 的歌会优先靠前，因为它们可以直接播放。`,
-  };
-}
-
-function getPartOfDay(hour) {
-  if (hour < 6) return "深夜";
-  if (hour < 11) return "早晨";
-  if (hour < 14) return "中午";
-  if (hour < 18) return "下午";
-  if (hour < 22) return "夜晚";
-  return "深夜";
-}
-
-function getNowContext() {
-  const now = new Date();
-  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][now.getDay()];
-  return {
-    iso: now.toISOString(),
-    time: now.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false }),
-    weekday,
-    partOfDay: getPartOfDay(now.getHours()),
-    weather: {
-      source: process.env.OPENWEATHER_API_KEY ? "openweather" : "mock",
-      summary: process.env.OPENWEATHER_API_KEY ? "待接实时天气" : "未连接天气 API",
-    },
-    state: {
-      playlistCount: playlist.length,
-      queueCount: lastQueue.length,
-    },
+    reason: `这次优先选择「${preferredTags.slice(0, 5).join("、")}」气质，目标能量 ${targetEnergy}。天气信号：${lastWeather?.summary || "未连接"}。有 audioUrl 的歌会优先靠前，因为它们可以直接播放。`,
   };
 }
 
@@ -227,7 +284,12 @@ async function handleApi(req, res) {
   }
 
   if (req.method === "GET" && url.pathname === "/api/now") {
-    sendJson(res, 200, getNowContext());
+    sendJson(res, 200, await getNowContext());
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/weather") {
+    sendJson(res, 200, await fetchWeather());
     return;
   }
 
