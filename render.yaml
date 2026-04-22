@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: private-dj-radio
+    name: moodcast
     runtime: node
     plan: free
     buildCommand: ""

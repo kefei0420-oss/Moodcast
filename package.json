@@ -1,8 +1,8 @@
 {
-  "name": "private-dj-radio",
+  "name": "moodcast",
   "version": "0.1.0",
   "private": true,
-  "description": "A personal DJ radio prototype that imports playlists and generates a curated queue.",
+  "description": "A mood weather station that turns daily check-ins, body energy, stress, time, and weather into gentle suggestions and song-name recommendations.",
   "scripts": {
     "start": "node server.js"
   },

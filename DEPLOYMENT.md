@@ -39,11 +39,7 @@ API key 不要写进前端代码，也不要提交到 GitHub。
 
 ```text
 OPENAI_API_KEY=...
-SPOTIFY_CLIENT_ID=...
-SPOTIFY_CLIENT_SECRET=...
-SPOTIFY_REDIRECT_URI=...
 WEATHER_CITY=Shanghai
-FISH_AUDIO_API_KEY=...
 ```
 
 本地开发可以新建 `.env`，但现在项目还没引入 dotenv，所以第一阶段先用平台环境变量。
@@ -52,8 +48,8 @@ FISH_AUDIO_API_KEY=...
 
 GitHub Pages 只能托管静态文件。我们的项目需要后端接口：
 
-- `/api/playlist/import`
-- `/api/radio/generate`
+- `/api/moodcast`
+- `/api/weather`
 - `/api/now`
 
 所以它需要 Render、Railway、Fly.io、VPS 这类能跑 Node 的平台。
@@ -63,7 +59,9 @@ GitHub Pages 只能托管静态文件。我们的项目需要后端接口：
 本地先跑：
 
 ```bash
-node server.js
+node --check app.js
+node --check server.js
+npm start
 ```
 
 打开：

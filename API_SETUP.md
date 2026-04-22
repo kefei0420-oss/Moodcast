@@ -1,10 +1,10 @@
-# API 接入路线
+# MOODCAST API 接入路线
 
 原则：浏览器只负责界面，所有 API 密钥和 OAuth token 都放在 `server.js` 后端。
 
-## 第一步：统一歌曲格式
+## 第一步：统一推荐歌曲格式
 
-不管接哪个平台，最后都转成同一种结构：
+MOODCAST 只显示推荐歌曲名和歌手，不播放、不外链。无论歌曲来自手动维护、CSV、公开榜单还是未来 AI 生成，最后都转成同一种结构：
 
 ```json
 {
@@ -12,15 +12,19 @@
   "artist": "周杰伦",
   "tags": ["华语", "夜晚", "安静"],
   "energy": 58,
-  "audioUrl": ""
+  "reason": "给今天一点阳光感"
 }
 ```
 
-这样前端不用关心歌来自 Spotify、Apple Music、网易云还是本地文件。
+这样前端不用关心推荐来自哪里，也不会触碰音乐播放版权问题。
 
-## Spotify API
+## 歌曲数据来源
 
-适合：读取用户歌单、歌曲名、歌手、专辑封面、部分 preview url。
+早期建议继续使用本地歌曲池或 CSV，字段只保留歌名、歌手、语言、标签、推荐理由。
+
+如果未来要接 Spotify、Apple Music 或网易云，适合读取用户歌单、歌曲名、歌手、标签和封面参考，但不要直接在 MOODCAST 内播放音乐，也不要依赖音频直链。
+
+### Spotify API
 
 需要：
 
@@ -38,9 +42,9 @@ SPOTIFY_REDIRECT_URI
 4. `GET /api/spotify/playlists/:id/tracks`：读取歌单歌曲
 5. 转换成统一歌曲格式
 
-注意：Spotify 的完整播放通常需要 Spotify 自己的播放 SDK 和用户账号权限，不等于你可以随便拿 mp3 链接。我们的播放器能直接播的是 `audioUrl`，如果平台不给音频直链，就只能展示、推荐，或跳转平台播放。
+注意：Spotify 的完整播放通常需要 Spotify 自己的播放 SDK 和用户账号权限，不等于你可以随便拿 mp3 链接。MOODCAST 当前定位是展示和推荐，不在站内播放。
 
-## Apple Music API
+### Apple Music API
 
 适合：Apple Music 用户的资料库、歌单、推荐。
 
@@ -54,7 +58,7 @@ APPLE_PRIVATE_KEY
 
 还需要前端拿 Music User Token，后端拿 Developer Token。
 
-## 网易云音乐
+### 网易云音乐
 
 适合：华语歌单。
 
@@ -68,7 +72,7 @@ APPLE_PRIVATE_KEY
 
 ## Open-Meteo
 
-适合：让 DJ 知道晴天、雨天、温度、城市。
+适合：让情绪天气站知道晴天、雨天、温度、城市。
 
 不需要 API key。当前项目使用 Open-Meteo：
 
@@ -85,7 +89,7 @@ GET /api/now
 GET /api/now?lat=31.2304&lon=121.4737
 ```
 
-然后把天气加入 `/api/radio/generate` 的推荐参数。
+然后把天气加入 `/api/moodcast` 的生成参数。
 
 你只需要在 Render 里添加环境变量：
 
@@ -93,7 +97,7 @@ GET /api/now?lat=31.2304&lon=121.4737
 WEATHER_CITY=Shanghai
 ```
 
-保存并重新部署后，页面里的“今天的场景信号”会显示真实天气，推荐理由里也会加入天气标签。
+保存并重新部署后，页面会显示真实天气，情绪天气和推荐理由里也会加入天气标签。
 
 页面里也有“使用当前位置天气”按钮。用户同意浏览器定位后，前端会把经纬度传给后端，后端用经纬度查天气；如果用户拒绝定位，就继续使用 `WEATHER_CITY`。
 
@@ -112,9 +116,9 @@ OPENWEATHER_API_KEY=你的 OpenWeather key
 WEATHER_CITY=Shanghai
 ```
 
-## AI DJ
+## AI 情绪引擎
 
-适合：让推荐理由和串词更像人。
+适合：让情绪天气、今日建议、care 提醒和推荐理由更自然。
 
 需要：
 
@@ -125,42 +129,31 @@ OPENAI_API_KEY
 后端可以做：
 
 ```text
-POST /api/dj/curate
+POST /api/moodcast
 ```
 
 输入：
 
-- 歌单
 - 当前天气
 - 当前时间
-- 用户心情
-- 用户的一句话提示
+- 用户今日状态
+- 身体能量
+- 压力强度
+- 推荐歌曲池
 
 输出：
 
-- 推荐队列
+- 情绪天气
+- 能量值
+- 今日建议
+- care 提醒
+- 中英文推荐歌曲名
 - 推荐理由
-- 每首歌之间的 DJ 串词
-
-## 语音 TTS
-
-适合：把 DJ 串词读出来。
-
-候选：
-
-- Fish Audio
-- OpenAI TTS
-
-流程：
-
-1. AI DJ 生成串词
-2. TTS API 生成音频
-3. 把串词音频插入播放队列
 
 ## 推荐接入顺序
 
-1. OpenWeather：最简单，马上让推荐更聪明
-2. AI DJ：最有产品感
-3. Spotify：OAuth 稍复杂，但文档正规
-4. 网易云：华语体验好，但接口稳定性要谨慎
-5. TTS：等推荐逻辑稳定后再做
+1. Open-Meteo：已经接入，继续稳定天气信号
+2. AI 情绪引擎：最能提升产品感
+3. 本地 7 天记录：让用户看到情绪天气趋势
+4. 分享卡片：适合传播
+5. 歌曲池扩充：优先手动精选，后续再考虑平台 API

@@ -4,19 +4,8 @@ const path = require("path");
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = __dirname;
-const SAMPLE_PATH = path.join(__dirname, "chinese-pop-playlist.csv");
 
-let playlist = [];
-let lastQueue = [];
 let lastWeather = null;
-
-const moodTags = {
-  focus: ["专注", "安静", "环境", "氛围", "冷感"],
-  night: ["夜晚", "温柔", "迷幻", "rnb", "城市"],
-  happy: ["开心", "甜", "轻快", "晴朗", "夏天"],
-  sad: ["伤感", "怀旧", "温柔", "夜晚", "自省"],
-  workout: ["运动", "电子", "跳舞", "摇滚", "力量"],
-};
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -30,15 +19,15 @@ const mimeTypes = {
 const connectors = [
   {
     key: "music",
-    name: "Music Playlist",
+    name: "Song Name Pool",
     status: "ready",
-    description: "当前支持 CSV / JSON 导入。下一步可替换成网易云、Spotify 或 Apple Music 歌单读取。",
+    description: "当前只展示推荐歌曲名和歌手，不播放、不外链，避免音乐版权问题。",
   },
   {
-    key: "ai_dj",
-    name: "AI DJ Brain",
+    key: "mood_engine",
+    name: "Mood Engine",
     status: process.env.OPENAI_API_KEY ? "ready" : "todo",
-    description: "接 OpenAI 后可以把规则推荐升级成自然语言 DJ、解释和跨歌单推理。",
+    description: "接 OpenAI 后可以把规则情绪分析升级成更自然的情绪天气、建议和 care 提醒。",
   },
   {
     key: "weather",
@@ -47,22 +36,16 @@ const connectors = [
     description: "使用无需 API key 的 Open-Meteo 天气接口，自动识别雨天、晴天、冷热等场景。",
   },
   {
-    key: "voice",
-    name: "Fish Audio",
-    status: process.env.FISH_AUDIO_API_KEY ? "ready" : "todo",
-    description: "接语音合成后，DJ 可以在歌与歌之间播报串词。",
-  },
-  {
-    key: "device",
-    name: "UPnP / AirPlay",
+    key: "history",
+    name: "Mood History",
     status: "todo",
-    description: "后续把播放推送到音箱、电视或局域网设备。",
+    description: "后续保存最近 7 天状态，生成能量和压力趋势。",
   },
   {
     key: "state",
     name: "Local State",
     status: "ready",
-    description: "本地 Node 服务保存当前歌单、队列和推荐上下文。",
+    description: "本地 Node 服务计算当前情绪天气、天气信号和推荐上下文。",
   },
 ];
 
@@ -117,55 +100,6 @@ function readBody(req) {
     req.on("end", () => resolve(body));
     req.on("error", reject);
   });
-}
-
-function normalizeSong(raw) {
-  const title = String(raw.title || raw.name || "").trim();
-  const artist = String(raw.artist || raw.singer || "未知艺人").trim();
-  const tagText = Array.isArray(raw.tags) ? raw.tags.join("|") : String(raw.tags || raw.tag || "");
-  const tags = tagText.split(/[|/，]/).map((tag) => tag.trim()).filter(Boolean);
-  const energy = Number(raw.energy || raw.score || 50);
-  const audioUrl = String(raw.audioUrl || raw.previewUrl || raw.url || "").trim();
-
-  if (!title) return null;
-  return {
-    title,
-    artist,
-    tags,
-    energy: Math.max(0, Math.min(100, Number.isFinite(energy) ? energy : 50)),
-    audioUrl,
-  };
-}
-
-function parsePlaylist(text) {
-  const trimmed = String(text || "").trim();
-  if (!trimmed) return [];
-
-  if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
-    const data = JSON.parse(trimmed);
-    const list = Array.isArray(data) ? data : data.songs || data.playlist || [];
-    return list.map(normalizeSong).filter(Boolean);
-  }
-
-  return trimmed
-    .split(/\n+/)
-    .map((line) => {
-      const [title, artist, tags, energy, audioUrl] = line.split(",");
-      return normalizeSong({ title, artist, tags, energy, audioUrl });
-    })
-    .filter(Boolean);
-}
-
-function scoreSong(song, preferredTags, targetEnergy, promptText) {
-  const searchText = `${song.title}${song.artist}${song.tags.join("")}`.toLowerCase();
-  const prompt = String(promptText || "").toLowerCase();
-  const tagScore = song.tags.reduce((score, tag) => {
-    return score + (preferredTags.includes(tag) || prompt.includes(tag.toLowerCase()) ? 30 : 0);
-  }, 0);
-  const energyScore = 42 - Math.abs(song.energy - targetEnergy) * 0.55;
-  const promptScore = prompt && searchText.includes(prompt) ? 20 : 0;
-  const playableBoost = song.audioUrl ? 8 : 0;
-  return tagScore + energyScore + promptScore + playableBoost + Math.random() * 4;
 }
 
 function getPartOfDay(hour) {
@@ -378,31 +312,9 @@ async function getNowContext(url = new URL("http://localhost/api/now")) {
     partOfDay: getPartOfDay(now.getHours()),
     weather: lastWeather,
     state: {
-      playlistCount: playlist.length,
-      queueCount: lastQueue.length,
+      mode: "moodcast",
+      songPolicy: "names-only",
     },
-  };
-}
-
-function generateRadio({ mood, energy, prompt }) {
-  if (!playlist.length) {
-    playlist = parsePlaylist(fs.readFileSync(SAMPLE_PATH, "utf8"));
-  }
-
-  const targetEnergy = Number(energy || 55);
-  const weatherTags = lastWeather?.tags || [];
-  const preferredTags = [...(moodTags[mood] || moodTags.focus), ...weatherTags];
-  const queue = playlist
-    .map((song) => ({ ...song, score: scoreSong(song, preferredTags, targetEnergy, prompt) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
-    .map(({ score, ...song }) => song);
-
-  lastQueue = queue;
-
-  return {
-    queue,
-    reason: `这次优先选择「${preferredTags.slice(0, 5).join("、")}」气质，目标能量 ${targetEnergy}。天气信号：${lastWeather?.summary || "未连接"}。有 audioUrl 的歌会优先靠前，因为它们可以直接播放。`,
   };
 }
 
@@ -438,12 +350,6 @@ async function handleApi(req, res) {
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/api/sample-playlist") {
-    const csv = fs.readFileSync(SAMPLE_PATH, "utf8");
-    sendJson(res, 200, { csv, count: parsePlaylist(csv).length });
-    return;
-  }
-
   if (req.method === "GET" && url.pathname === "/api/connectors") {
     sendJson(res, 200, { connectors });
     return;
@@ -465,20 +371,6 @@ async function handleApi(req, res) {
     return;
   }
 
-  if (req.method === "POST" && url.pathname === "/api/playlist/import") {
-    const body = JSON.parse(await readBody(req));
-    playlist = parsePlaylist(body.text || "");
-    lastQueue = [];
-    sendJson(res, 200, { ok: true, count: playlist.length });
-    return;
-  }
-
-  if (req.method === "POST" && url.pathname === "/api/radio/generate") {
-    const body = JSON.parse(await readBody(req));
-    sendJson(res, 200, generateRadio(body));
-    return;
-  }
-
   sendJson(res, 404, { error: "API not found" });
 }
 
@@ -495,5 +387,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`private.fm running at http://localhost:${PORT}`);
+  console.log(`MOODCAST running at http://localhost:${PORT}`);
 });

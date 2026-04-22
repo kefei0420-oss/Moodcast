@@ -41,7 +41,7 @@ http://localhost:3000
 
 ## 部署
 
-发布步骤看 [DEPLOYMENT.md](/Users/kefei/Desktop/vibe%20coding/DEPLOYMENT.md)。
+发布步骤看 [DEPLOYMENT.md](/Users/kefei/Desktop/moodcast/DEPLOYMENT.md)。
 
 ## 后续可做
 
