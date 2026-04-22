@@ -1,9 +1,9 @@
 {
-  "name": "私人 DJ 电台",
-  "short_name": "private.fm",
+  "name": "MOODCAST 情绪天气站",
+  "short_name": "MOODCAST",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050606",
   "theme_color": "#050606",
-  "description": "读取你的歌单并生成私人 DJ 电台。"
+  "description": "把今日状态翻译成情绪天气，并推荐中英文歌曲名。"
 }

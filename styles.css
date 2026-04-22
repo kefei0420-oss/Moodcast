@@ -2,7 +2,6 @@
   color-scheme: dark;
   --bg: #030305;
   --surface: rgba(12, 11, 22, 0.92);
-  --surface-2: rgba(22, 20, 36, 0.86);
   --line: rgba(130, 128, 164, 0.24);
   --line-hot: rgba(106, 255, 183, 0.46);
   --text: #f3f1f7;
@@ -80,8 +79,7 @@ p {
 .topbar,
 .brand,
 .panel-title,
-.time-row,
-.transport {
+.meter-label {
   display: flex;
   align-items: center;
 }
@@ -143,7 +141,7 @@ p {
   border-color: rgba(106,255,183,.4);
 }
 
-.player-card,
+.forecast-card,
 .panel {
   position: relative;
   overflow: hidden;
@@ -156,7 +154,7 @@ p {
   backdrop-filter: blur(20px);
 }
 
-.player-card::before,
+.forecast-card::before,
 .panel::before {
   content: "";
   position: absolute;
@@ -167,8 +165,8 @@ p {
   opacity: .1;
 }
 
-.player-card {
-  min-height: 740px;
+.forecast-card {
+  min-height: 660px;
   padding: 24px;
 }
 
@@ -200,65 +198,50 @@ p {
   50% { transform: scaleY(.36); opacity: .46; }
 }
 
-.record-stage {
-  position: relative;
+.weather-orb {
+  width: min(390px, 82vw);
+  aspect-ratio: 1;
   display: grid;
   place-items: center;
-  min-height: 372px;
-  padding-top: 24px;
-}
-
-.vinyl {
-  position: relative;
-  width: min(400px, 84vw);
-  max-width: 100%;
-  aspect-ratio: 1;
+  margin: 34px auto 26px;
   border: 1px solid rgba(130,128,164,.34);
   border-radius: 50%;
   background:
-    radial-gradient(circle, rgba(217,213,230,.85) 0 1.4%, transparent 1.6%),
-    radial-gradient(circle, rgba(106,255,183,.55) 0 12%, transparent 12.5%),
-    radial-gradient(circle, rgba(127,114,255,.16) 0 23%, transparent 23.5%),
-    repeating-radial-gradient(circle, #171525 0 2px, #050506 3px 7px);
+    radial-gradient(circle, rgba(106,255,183,.18) 0 18%, transparent 19%),
+    radial-gradient(circle, rgba(127,114,255,.18) 0 42%, transparent 43%),
+    repeating-radial-gradient(circle, rgba(217,213,230,.1) 0 1px, transparent 2px 9px);
   box-shadow: inset 0 0 46px rgba(255,255,255,.04), 0 0 70px rgba(127,114,255,.18);
 }
 
-.vinyl.playing {
-  animation: spin 9s linear infinite;
+.weather-orb[data-mood="low"] {
+  background:
+    radial-gradient(circle, rgba(130,128,164,.22) 0 20%, transparent 21%),
+    radial-gradient(circle, rgba(70,70,92,.28) 0 45%, transparent 46%),
+    repeating-radial-gradient(circle, rgba(217,213,230,.09) 0 1px, transparent 2px 9px);
 }
 
-.vinyl-label {
-  position: absolute;
-  inset: 34%;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #12111c;
-  border: 1px solid rgba(106,255,183,.45);
+.weather-orb[data-mood="bright"] {
+  background:
+    radial-gradient(circle, rgba(255,236,150,.26) 0 20%, transparent 21%),
+    radial-gradient(circle, rgba(106,255,183,.18) 0 44%, transparent 45%),
+    repeating-radial-gradient(circle, rgba(217,213,230,.11) 0 1px, transparent 2px 9px);
+}
+
+.weather-orb[data-mood="intense"] {
+  background:
+    radial-gradient(circle, rgba(255,255,255,.2) 0 17%, transparent 18%),
+    radial-gradient(circle, rgba(127,114,255,.24) 0 44%, transparent 45%),
+    repeating-radial-gradient(circle, rgba(106,255,183,.11) 0 1px, transparent 2px 9px);
+}
+
+.weather-orb span {
   color: var(--paper);
   font-family: var(--mono);
-  font-size: clamp(30px, 9vw, 58px);
-  font-weight: 400;
-  text-shadow: 0 0 18px rgba(106,255,183,.28);
+  font-size: clamp(72px, 20vw, 132px);
+  text-shadow: 0 0 24px rgba(106,255,183,.22);
 }
 
-.needle {
-  position: absolute;
-  top: 58px;
-  right: 10%;
-  width: 114px;
-  height: 6px;
-  border-radius: 999px;
-  transform: rotate(34deg);
-  transform-origin: right center;
-  background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(217,213,230,.82));
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.track-display {
+.forecast-display {
   position: relative;
   text-align: center;
 }
@@ -275,15 +258,15 @@ h1 {
   margin-bottom: 10px;
   color: var(--paper);
   font-family: var(--mono);
-  font-size: clamp(40px, 10vw, 70px);
+  font-size: clamp(42px, 10vw, 68px);
   font-weight: 400;
   line-height: 1;
   text-shadow: 0 0 22px rgba(127,114,255,.3);
 }
 
-.track-display p:last-child {
+.forecast-display p:last-child {
   margin: 0 auto;
-  max-width: 520px;
+  max-width: 560px;
   color: var(--muted);
   line-height: 1.7;
 }
@@ -306,7 +289,8 @@ h1 {
   box-shadow: 0 0 14px rgba(106,255,183,.8);
 }
 
-.on-air-line i {
+.on-air-line i,
+.terminal-field::after {
   width: 8px;
   height: 15px;
   background: var(--mint);
@@ -317,8 +301,21 @@ h1 {
   50% { opacity: 0; }
 }
 
-.audio-shell {
-  margin-top: 24px;
+.meter-block {
+  margin-top: 26px;
+}
+
+.meter-label {
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.meter-label b {
+  color: var(--paper);
+  font-weight: 400;
 }
 
 .progress {
@@ -336,40 +333,9 @@ h1 {
   background: var(--paper);
 }
 
-.time-row {
-  justify-content: space-between;
-  margin-top: 8px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 12px;
-}
-
-.transport {
-  justify-content: center;
-  gap: 14px;
-  margin: 26px 0;
-}
-
-.transport button {
-  width: 54px;
-  border-radius: 50%;
-  background: rgba(255,255,255,.04);
-  color: var(--paper);
-  font-size: 28px;
-}
-
-.transport .play {
-  width: 74px;
-  min-height: 74px;
-  border-color: rgba(106,255,183,.5);
-  background: var(--paper);
-  color: #08070d;
-  font-size: 26px;
-  box-shadow: 0 0 30px rgba(217,213,230,.22);
-}
-
 .dj-note {
   position: relative;
+  margin-top: 22px;
   padding: 16px;
   border: 1px solid rgba(130,128,164,.18);
   border-radius: 8px;
@@ -405,13 +371,27 @@ h1 {
   font-weight: 400;
 }
 
-.context-strip {
+.field {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.control-grid,
+.context-strip,
+.advice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.context-strip div {
+.context-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.context-strip div,
+.advice-grid article {
   min-height: 86px;
   padding: 13px;
   border: 1px solid rgba(130,128,164,.18);
@@ -420,14 +400,15 @@ h1 {
 }
 
 .context-strip small,
-.file-drop small,
+.advice-grid small,
 .field span,
 .queue-meta {
   color: var(--muted);
   font-size: 13px;
 }
 
-.context-strip small {
+.context-strip small,
+.advice-grid small {
   font-family: var(--mono);
 }
 
@@ -438,43 +419,10 @@ h1 {
   font-weight: 500;
 }
 
-.location-button,
-#importButton,
-#attachUrlButton,
-#generateButton {
-  width: 100%;
-  margin-top: 14px;
-}
-
-.primary-action,
-#importButton,
-#attachUrlButton {
-  border-color: rgba(106,255,183,.42);
-  background: rgba(217,213,230,.92);
-  color: #07070c;
-}
-
-.mood-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.mood {
-  background: rgba(255,255,255,.04);
-}
-
-.mood.active {
-  border-color: rgba(106,255,183,.5);
-  background: rgba(106,255,183,.12);
-  color: var(--mint);
-}
-
-.field {
-  position: relative;
-  display: grid;
-  gap: 8px;
-  margin-top: 16px;
+.advice-grid p {
+  margin: 8px 0 0;
+  color: var(--paper);
+  line-height: 1.65;
 }
 
 input,
@@ -515,41 +463,22 @@ textarea:focus {
   position: absolute;
   right: 12px;
   bottom: 13px;
-  width: 8px;
-  height: 16px;
-  background: var(--mint);
-  animation: blink 1s steps(2, start) infinite;
   pointer-events: none;
 }
 
-.ghost-button {
-  min-height: 36px;
-  padding: 0 12px;
+.location-button,
+.primary-action {
+  width: 100%;
+  margin-top: 14px;
 }
 
-.file-drop {
-  display: grid;
-  gap: 8px;
-  place-items: center;
-  min-height: 104px;
-  border: 1px dashed rgba(130,128,164,.32);
-  border-radius: 8px;
-  background: rgba(255,255,255,.025);
-  cursor: pointer;
+.primary-action {
+  border-color: rgba(106,255,183,.42);
+  background: rgba(217,213,230,.92);
+  color: #07070c;
 }
 
-.file-drop input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.file-drop span {
-  color: var(--paper);
-  font-family: var(--mono);
-}
-
-#queueList {
+#songList {
   display: grid;
   gap: 8px;
   margin: 0;
@@ -557,26 +486,19 @@ textarea:focus {
   list-style: none;
 }
 
-.queue-item {
+.song-item {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  min-height: 62px;
+  min-height: 68px;
   padding: 11px 12px;
   border: 1px solid rgba(130,128,164,.14);
   border-radius: 8px;
   background: rgba(255,255,255,.025);
-  cursor: pointer;
 }
 
-.queue-item.active {
-  border-color: rgba(106,255,183,.45);
-  background: rgba(106,255,183,.1);
-}
-
-.queue-index,
-.energy-pill {
+.queue-index {
   color: var(--muted);
   font-family: var(--mono);
   font-size: 12px;
@@ -597,10 +519,6 @@ textarea:focus {
   white-space: nowrap;
 }
 
-.energy-pill.playable {
-  color: var(--mint);
-}
-
 @media (max-width: 680px) {
   .app {
     width: min(100% - 18px, 560px);
@@ -611,22 +529,18 @@ textarea:focus {
     min-height: 58px;
   }
 
-  .player-card {
+  .forecast-card {
     min-height: auto;
     padding: 16px;
   }
 
-  .record-stage {
-    min-height: 286px;
-  }
-
-  .needle {
-    width: 88px;
-    top: 50px;
+  .weather-orb {
+    margin-top: 42px;
   }
 
   .context-strip,
-  .mood-grid {
+  .control-grid,
+  .advice-grid {
     grid-template-columns: 1fr;
   }
 

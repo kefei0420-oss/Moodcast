@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>私人 DJ 电台</title>
+    <title>MOODCAST 情绪天气站</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="manifest" href="/manifest.webmanifest" />
   </head>
@@ -13,14 +13,14 @@
         <div class="brand">
           <span class="brand-mark" aria-hidden="true"></span>
           <div>
-            <strong>private.fm</strong>
-            <small>Cyber DJ System</small>
+            <strong>MOODCAST</strong>
+            <small>personal emotional weather</small>
           </div>
         </div>
         <span id="apiStatus" class="status-pill">API offline</span>
       </nav>
 
-      <section class="player-card" aria-label="私人 DJ 播放器">
+      <section class="forecast-card" aria-live="polite">
         <div class="visualizer" aria-hidden="true">
           <span></span>
           <span></span>
@@ -30,49 +30,62 @@
           <span></span>
         </div>
 
-        <section class="record-stage">
-          <div class="vinyl" id="vinyl">
-            <div class="vinyl-label">
-              <span id="coverInitial">DJ</span>
-            </div>
-          </div>
-          <div class="needle" aria-hidden="true"></div>
-        </section>
-
-        <section class="track-display" aria-live="polite">
-          <p class="eyebrow">Now Curated</p>
-          <h1 id="songTitle">私人 DJ 电台</h1>
-          <p id="songMeta">导入歌单，选择场景，让系统生成你的播放队列。</p>
-          <div class="on-air-line"><span></span> ON AIR <i aria-hidden="true"></i></div>
-        </section>
-
-        <div class="audio-shell">
-          <audio id="audioPlayer" preload="metadata"></audio>
-          <div class="progress">
-            <span id="progressFill"></span>
-          </div>
-          <div class="time-row">
-            <span id="currentTime">00:00</span>
-            <span id="duration">00:00</span>
-          </div>
+        <div class="weather-orb" id="weatherOrb">
+          <span id="weatherIcon">◇</span>
         </div>
 
-        <div class="transport">
-          <button id="prevButton" type="button" title="上一首">‹</button>
-          <button id="playButton" type="button" class="play" title="播放/暂停">▶</button>
-          <button id="nextButton" type="button" title="下一首">›</button>
+        <section class="forecast-display">
+          <p class="eyebrow">Today's Emotional Weather</p>
+          <h1 id="forecastTitle">等待校准</h1>
+          <p id="forecastSummary">写下你今天的状态，我会把它翻译成一份情绪天气。</p>
+          <div class="on-air-line"><span></span> MOODCAST LIVE <i aria-hidden="true"></i></div>
+        </section>
+
+        <div class="meter-block">
+          <div class="meter-label">
+            <span>Energy</span>
+            <b id="energyScore">--</b>
+          </div>
+          <div class="progress">
+            <span id="energyFill"></span>
+          </div>
         </div>
 
         <section class="dj-note">
-          <p>DJ Note</p>
-          <span id="djReason">先导入歌单，或者直接用示例华语歌单试一下。</span>
+          <p>Signal Note</p>
+          <span id="signalNote">不是诊断，只是帮你把模糊的状态变得可看见一点。</span>
         </section>
+      </section>
+
+      <section class="panel input-panel">
+        <div class="panel-title">
+          <h2>今日状态</h2>
+          <span id="clockText">--:--</span>
+        </div>
+
+        <label class="field terminal-field">
+          <span>你现在感觉如何？</span>
+          <textarea id="moodInput" rows="5" placeholder="例如：今天有点累，事情很多，但又不想完全躺平。想慢慢恢复一点秩序感。"></textarea>
+        </label>
+
+        <div class="control-grid">
+          <label class="field">
+            <span>身体能量 <b id="energyValue">50</b></span>
+            <input id="energyInput" type="range" min="0" max="100" value="50" />
+          </label>
+          <label class="field">
+            <span>压力强度 <b id="stressValue">45</b></span>
+            <input id="stressInput" type="range" min="0" max="100" value="45" />
+          </label>
+        </div>
+
+        <button id="generateButton" class="primary-action" type="button">生成情绪天气</button>
       </section>
 
       <section class="panel context-panel">
         <div class="panel-title">
-          <h2>场景信号</h2>
-          <span id="clockText">--:--</span>
+          <h2>环境信号</h2>
+          <span>context</span>
         </div>
         <div class="context-strip">
           <div>
@@ -84,72 +97,36 @@
             <b id="weatherText">未连接</b>
           </div>
           <div>
-            <small>State</small>
-            <b id="stateText">local memory</b>
+            <small>Mode</small>
+            <b id="stateText">mood engine</b>
           </div>
         </div>
         <button id="locationButton" class="location-button" type="button">使用当前位置天气</button>
       </section>
 
-      <section class="panel tune-panel">
+      <section class="panel advice-panel">
         <div class="panel-title">
-          <h2>电台参数</h2>
-          <span>mood engine</span>
+          <h2>今日建议</h2>
+          <span id="moodTag">uncalibrated</span>
         </div>
-
-        <div class="mood-grid" id="moodGrid" role="radiogroup" aria-label="心情">
-          <button type="button" class="mood active" data-mood="focus">专注</button>
-          <button type="button" class="mood" data-mood="night">夜晚</button>
-          <button type="button" class="mood" data-mood="happy">开心</button>
-          <button type="button" class="mood" data-mood="sad">低落</button>
-          <button type="button" class="mood" data-mood="workout">运动</button>
+        <div class="advice-grid">
+          <article>
+            <small>Action</small>
+            <p id="actionText">先写一句真实状态。</p>
+          </article>
+          <article>
+            <small>Care</small>
+            <p id="careText">我会给你一个不夸张的小建议。</p>
+          </article>
         </div>
-
-        <label class="field">
-          <span>目标能量 <b id="energyValue">55</b></span>
-          <input id="energyInput" type="range" min="0" max="100" value="55" />
-        </label>
-
-        <label class="field">
-          <span>给 DJ 的一句话</span>
-          <input id="promptInput" type="text" placeholder="今晚想听不吵但有节奏的华语歌" />
-        </label>
-
-        <button id="generateButton" class="primary-action" type="button">生成电台队列</button>
       </section>
 
-      <section class="panel import-panel">
+      <section class="panel songs-panel">
         <div class="panel-title">
-          <h2>导入歌单</h2>
-          <button id="loadSampleButton" type="button" class="ghost-button">载入华语示例</button>
+          <h2>今日推荐歌曲</h2>
+          <span id="songCount">中英混合</span>
         </div>
-
-        <label class="file-drop">
-          <input id="playlistFile" type="file" accept=".csv,.json,.txt" />
-          <span>选择 CSV / JSON / TXT</span>
-          <small>支持 title, artist, tags, energy, audioUrl</small>
-        </label>
-
-        <label class="field">
-          <span>歌单文本</span>
-          <textarea id="playlistText" rows="6" placeholder="晴天,周杰伦,华语|怀旧|晴朗,64,https://example.com/preview.mp3"></textarea>
-        </label>
-
-        <label class="field terminal-field">
-          <span>给当前歌曲绑定音频 URL</span>
-          <input id="audioUrlInput" type="url" placeholder="https://example.com/song.mp3" />
-        </label>
-        <button id="attachUrlButton" type="button">绑定到当前歌曲</button>
-
-        <button id="importButton" type="button">上传到后端</button>
-      </section>
-
-      <section class="panel queue-panel">
-        <div class="panel-title">
-          <h2>推荐队列</h2>
-          <span id="songCount">0 首</span>
-        </div>
-        <ol id="queueList"></ol>
+        <ol id="songList"></ol>
       </section>
     </main>
 
