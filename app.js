@@ -1,4 +1,5 @@
 let userLocation = null;
+let soundEngine = null;
 
 const els = {
   apiStatus: document.querySelector("#apiStatus"),
@@ -24,6 +25,11 @@ const els = {
   actionText: document.querySelector("#actionText"),
   careText: document.querySelector("#careText"),
   songList: document.querySelector("#songList"),
+  soundStatus: document.querySelector("#soundStatus"),
+  soundToggle: document.querySelector("#soundToggle"),
+  soundModes: document.querySelectorAll(".sound-mode"),
+  soundVolume: document.querySelector("#soundVolume"),
+  soundVolumeValue: document.querySelector("#soundVolumeValue"),
 };
 
 async function api(path, options = {}) {
@@ -80,6 +86,93 @@ function renderMoodcast(data) {
   });
 }
 
+function createNoiseBuffer(audioContext) {
+  const duration = 2;
+  const frameCount = audioContext.sampleRate * duration;
+  const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  let previous = 0;
+
+  for (let index = 0; index < frameCount; index += 1) {
+    const white = Math.random() * 2 - 1;
+    previous = previous * 0.84 + white * 0.16;
+    data[index] = previous;
+  }
+
+  return buffer;
+}
+
+function createSoundEngine() {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+
+  const audioContext = new AudioContext();
+  const source = audioContext.createBufferSource();
+  const filter = audioContext.createBiquadFilter();
+  const gain = audioContext.createGain();
+
+  source.buffer = createNoiseBuffer(audioContext);
+  source.loop = true;
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioContext.destination);
+  gain.gain.value = 0;
+  source.start();
+
+  return {
+    audioContext,
+    filter,
+    gain,
+    mode: "rain",
+    active: false,
+  };
+}
+
+function configureSound(mode) {
+  if (!soundEngine) return;
+
+  const { audioContext, filter, gain } = soundEngine;
+  soundEngine.mode = mode;
+
+  const settings = {
+    rain: { type: "bandpass", frequency: 1800, q: 0.75 },
+    wind: { type: "lowpass", frequency: 520, q: 0.4 },
+    fan: { type: "lowpass", frequency: 220, q: 1.2 },
+  }[mode];
+
+  filter.type = settings.type;
+  filter.frequency.setTargetAtTime(settings.frequency, audioContext.currentTime, 0.08);
+  filter.Q.setTargetAtTime(settings.q, audioContext.currentTime, 0.08);
+  gain.gain.setTargetAtTime(soundEngine.active ? Number(els.soundVolume.value) / 100 : 0, audioContext.currentTime, 0.08);
+}
+
+function updateSoundUi() {
+  const active = Boolean(soundEngine?.active);
+  els.soundToggle.textContent = active ? "暂停环境声" : "启动白噪音";
+  els.soundToggle.setAttribute("aria-pressed", String(active));
+  els.soundStatus.textContent = active ? soundEngine.mode : "muted";
+  els.soundVolumeValue.textContent = els.soundVolume.value;
+}
+
+async function toggleSound() {
+  if (!soundEngine) {
+    soundEngine = createSoundEngine();
+    if (!soundEngine) {
+      els.signalNote.textContent = "这个浏览器暂时不支持 Web Audio 环境声。";
+      return;
+    }
+    configureSound(soundEngine.mode);
+  }
+
+  if (soundEngine.audioContext.state === "suspended") {
+    await soundEngine.audioContext.resume();
+  }
+
+  soundEngine.active = !soundEngine.active;
+  configureSound(soundEngine.mode);
+  updateSoundUi();
+}
+
 async function generateMoodcast() {
   const context = await loadContext();
   const data = await api("/api/moodcast", {
@@ -105,6 +198,25 @@ els.stressInput.addEventListener("input", () => {
 });
 
 els.generateButton.addEventListener("click", generateMoodcast);
+
+els.soundToggle.addEventListener("click", toggleSound);
+
+els.soundVolume.addEventListener("input", () => {
+  els.soundVolumeValue.textContent = els.soundVolume.value;
+  if (soundEngine) configureSound(soundEngine.mode);
+});
+
+els.soundModes.forEach((button) => {
+  button.addEventListener("click", () => {
+    els.soundModes.forEach((modeButton) => modeButton.classList.remove("active"));
+    button.classList.add("active");
+    if (!soundEngine) {
+      soundEngine = createSoundEngine();
+    }
+    configureSound(button.dataset.sound);
+    updateSoundUi();
+  });
+});
 
 els.locationButton.addEventListener("click", () => {
   if (!navigator.geolocation) {

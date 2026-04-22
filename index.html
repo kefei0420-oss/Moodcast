@@ -104,6 +104,25 @@
         <button id="locationButton" class="location-button" type="button">使用当前位置天气</button>
       </section>
 
+      <section class="panel sound-panel">
+        <div class="panel-title">
+          <h2>环境声</h2>
+          <span id="soundStatus">muted</span>
+        </div>
+        <div class="sound-console">
+          <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="false">启动白噪音</button>
+          <div class="sound-modes" role="group" aria-label="环境声模式">
+            <button class="sound-mode active" type="button" data-sound="rain">Rain</button>
+            <button class="sound-mode" type="button" data-sound="wind">Wind</button>
+            <button class="sound-mode" type="button" data-sound="fan">Fan</button>
+          </div>
+          <label class="field compact-field">
+            <span>音量 <b id="soundVolumeValue">22</b></span>
+            <input id="soundVolume" type="range" min="0" max="60" value="22" />
+          </label>
+        </div>
+      </section>
+
       <section class="panel advice-panel">
         <div class="panel-title">
           <h2>今日建议</h2>

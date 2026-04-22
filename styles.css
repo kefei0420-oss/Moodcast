@@ -478,6 +478,57 @@ textarea:focus {
   color: #07070c;
 }
 
+.sound-console {
+  display: grid;
+  grid-template-columns: minmax(150px, .75fr) minmax(210px, 1fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.sound-toggle {
+  min-height: 104px;
+  border-color: rgba(106,255,183,.34);
+  background:
+    linear-gradient(180deg, rgba(106,255,183,.13), rgba(255,255,255,.035)),
+    rgba(0,0,0,.28);
+  color: var(--mint);
+  letter-spacing: 0;
+}
+
+.sound-toggle[aria-pressed="true"] {
+  background:
+    linear-gradient(180deg, rgba(217,213,230,.94), rgba(177,169,204,.86)),
+    var(--paper);
+  color: #07070c;
+  box-shadow: 0 0 32px rgba(106,255,183,.16);
+}
+
+.sound-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sound-mode {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sound-mode.active {
+  border-color: rgba(106,255,183,.48);
+  color: var(--mint);
+  background: rgba(106,255,183,.08);
+}
+
+.compact-field {
+  grid-column: 2;
+  margin-top: -48px;
+  align-self: end;
+}
+
 #songList {
   display: grid;
   gap: 8px;
@@ -540,8 +591,18 @@ textarea:focus {
 
   .context-strip,
   .control-grid,
-  .advice-grid {
+  .advice-grid,
+  .sound-console {
     grid-template-columns: 1fr;
+  }
+
+  .sound-toggle {
+    min-height: 58px;
+  }
+
+  .compact-field {
+    grid-column: auto;
+    margin-top: 4px;
   }
 
   .panel {
