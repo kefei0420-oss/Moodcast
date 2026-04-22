@@ -87,7 +87,7 @@ function renderMoodcast(data) {
 }
 
 function createNoiseBuffer(audioContext) {
-  const duration = 2;
+  const duration = 3;
   const frameCount = audioContext.sampleRate * duration;
   const buffer = audioContext.createBuffer(1, frameCount, audioContext.sampleRate);
   const data = buffer.getChannelData(0);
@@ -95,11 +95,16 @@ function createNoiseBuffer(audioContext) {
 
   for (let index = 0; index < frameCount; index += 1) {
     const white = Math.random() * 2 - 1;
-    previous = previous * 0.84 + white * 0.16;
-    data[index] = previous;
+    previous = previous * 0.92 + white * 0.08;
+    data[index] = previous * 0.7;
   }
 
   return buffer;
+}
+
+function volumeToGain(volume) {
+  const normalized = Math.max(0, Math.min(35, Number(volume))) / 35;
+  return normalized * normalized * 0.18;
 }
 
 function createSoundEngine() {
@@ -108,12 +113,16 @@ function createSoundEngine() {
 
   const audioContext = new AudioContext();
   const source = audioContext.createBufferSource();
+  const highpass = audioContext.createBiquadFilter();
   const filter = audioContext.createBiquadFilter();
   const gain = audioContext.createGain();
 
   source.buffer = createNoiseBuffer(audioContext);
   source.loop = true;
-  source.connect(filter);
+  highpass.type = "highpass";
+  highpass.frequency.value = 80;
+  source.connect(highpass);
+  highpass.connect(filter);
   filter.connect(gain);
   gain.connect(audioContext.destination);
   gain.gain.value = 0;
@@ -121,6 +130,7 @@ function createSoundEngine() {
 
   return {
     audioContext,
+    highpass,
     filter,
     gain,
     mode: "rain",
@@ -135,20 +145,20 @@ function configureSound(mode) {
   soundEngine.mode = mode;
 
   const settings = {
-    rain: { type: "bandpass", frequency: 1800, q: 0.75 },
-    wind: { type: "lowpass", frequency: 520, q: 0.4 },
-    fan: { type: "lowpass", frequency: 220, q: 1.2 },
+    rain: { type: "bandpass", frequency: 920, q: 0.45 },
+    wind: { type: "lowpass", frequency: 320, q: 0.35 },
+    fan: { type: "lowpass", frequency: 180, q: 0.8 },
   }[mode];
 
   filter.type = settings.type;
   filter.frequency.setTargetAtTime(settings.frequency, audioContext.currentTime, 0.08);
   filter.Q.setTargetAtTime(settings.q, audioContext.currentTime, 0.08);
-  gain.gain.setTargetAtTime(soundEngine.active ? Number(els.soundVolume.value) / 100 : 0, audioContext.currentTime, 0.08);
+  gain.gain.setTargetAtTime(soundEngine.active ? volumeToGain(els.soundVolume.value) : 0, audioContext.currentTime, 0.12);
 }
 
 function updateSoundUi() {
   const active = Boolean(soundEngine?.active);
-  els.soundToggle.textContent = active ? "暂停环境声" : "启动白噪音";
+  els.soundToggle.textContent = active ? "暂停环境声" : "启动柔和底噪";
   els.soundToggle.setAttribute("aria-pressed", String(active));
   els.soundStatus.textContent = active ? soundEngine.mode : "muted";
   els.soundVolumeValue.textContent = els.soundVolume.value;

@@ -14,7 +14,7 @@
           <span class="brand-mark" aria-hidden="true"></span>
           <div>
             <strong>MOODCAST</strong>
-            <small>personal emotional weather</small>
+            <small>ambient mood station</small>
           </div>
         </div>
         <span id="apiStatus" class="status-pill">API offline</span>
@@ -57,95 +57,97 @@
         </section>
       </section>
 
-      <section class="panel input-panel">
-        <div class="panel-title">
-          <h2>今日状态</h2>
-          <span id="clockText">--:--</span>
-        </div>
+      <section class="workspace-grid">
+        <section class="panel input-panel">
+          <div class="panel-title">
+            <h2>今日状态</h2>
+            <span id="clockText">--:--</span>
+          </div>
 
-        <label class="field terminal-field">
-          <span>你现在感觉如何？</span>
-          <textarea id="moodInput" rows="5" placeholder="例如：今天有点累，事情很多，但又不想完全躺平。想慢慢恢复一点秩序感。"></textarea>
-        </label>
-
-        <div class="control-grid">
-          <label class="field">
-            <span>身体能量 <b id="energyValue">50</b></span>
-            <input id="energyInput" type="range" min="0" max="100" value="50" />
+          <label class="field terminal-field">
+            <span>你现在感觉如何？</span>
+            <textarea id="moodInput" rows="5" placeholder="例如：今天有点累，事情很多，但又不想完全躺平。想慢慢恢复一点秩序感。"></textarea>
           </label>
-          <label class="field">
-            <span>压力强度 <b id="stressValue">45</b></span>
-            <input id="stressInput" type="range" min="0" max="100" value="45" />
-          </label>
-        </div>
 
-        <button id="generateButton" class="primary-action" type="button">生成情绪天气</button>
-      </section>
-
-      <section class="panel context-panel">
-        <div class="panel-title">
-          <h2>环境信号</h2>
-          <span>context</span>
-        </div>
-        <div class="context-strip">
-          <div>
-            <small>Now</small>
-            <b id="nowText">loading</b>
+          <div class="control-grid">
+            <label class="field">
+              <span>身体能量 <b id="energyValue">50</b></span>
+              <input id="energyInput" type="range" min="0" max="100" value="50" />
+            </label>
+            <label class="field">
+              <span>压力强度 <b id="stressValue">45</b></span>
+              <input id="stressInput" type="range" min="0" max="100" value="45" />
+            </label>
           </div>
-          <div>
-            <small>Weather</small>
-            <b id="weatherText">未连接</b>
-          </div>
-          <div>
-            <small>Mode</small>
-            <b id="stateText">mood engine</b>
-          </div>
-        </div>
-        <button id="locationButton" class="location-button" type="button">使用当前位置天气</button>
-      </section>
 
-      <section class="panel sound-panel">
-        <div class="panel-title">
-          <h2>环境声</h2>
-          <span id="soundStatus">muted</span>
-        </div>
-        <div class="sound-console">
-          <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="false">启动白噪音</button>
-          <div class="sound-modes" role="group" aria-label="环境声模式">
-            <button class="sound-mode active" type="button" data-sound="rain">Rain</button>
-            <button class="sound-mode" type="button" data-sound="wind">Wind</button>
-            <button class="sound-mode" type="button" data-sound="fan">Fan</button>
+          <button id="generateButton" class="primary-action" type="button">生成情绪天气</button>
+        </section>
+
+        <section class="panel context-panel">
+          <div class="panel-title">
+            <h2>环境信号</h2>
+            <span>context</span>
           </div>
-          <label class="field compact-field">
-            <span>音量 <b id="soundVolumeValue">22</b></span>
-            <input id="soundVolume" type="range" min="0" max="60" value="22" />
-          </label>
-        </div>
-      </section>
+          <div class="context-strip">
+            <div>
+              <small>Now</small>
+              <b id="nowText">loading</b>
+            </div>
+            <div>
+              <small>Weather</small>
+              <b id="weatherText">未连接</b>
+            </div>
+            <div>
+              <small>Mode</small>
+              <b id="stateText">mood engine</b>
+            </div>
+          </div>
+          <button id="locationButton" class="location-button" type="button">使用当前位置天气</button>
+        </section>
 
-      <section class="panel advice-panel">
-        <div class="panel-title">
-          <h2>今日建议</h2>
-          <span id="moodTag">uncalibrated</span>
-        </div>
-        <div class="advice-grid">
-          <article>
-            <small>Action</small>
-            <p id="actionText">先写一句真实状态。</p>
-          </article>
-          <article>
-            <small>Care</small>
-            <p id="careText">我会给你一个不夸张的小建议。</p>
-          </article>
-        </div>
-      </section>
+        <section class="panel sound-panel">
+          <div class="panel-title">
+            <h2>环境声</h2>
+            <span id="soundStatus">muted</span>
+          </div>
+          <div class="sound-console">
+            <button id="soundToggle" class="sound-toggle" type="button" aria-pressed="false">启动柔和底噪</button>
+            <div class="sound-modes" role="group" aria-label="环境声模式">
+              <button class="sound-mode active" type="button" data-sound="rain">Rain</button>
+              <button class="sound-mode" type="button" data-sound="wind">Wind</button>
+              <button class="sound-mode" type="button" data-sound="fan">Fan</button>
+            </div>
+            <label class="field compact-field">
+              <span>音量 <b id="soundVolumeValue">12</b></span>
+              <input id="soundVolume" type="range" min="0" max="35" value="12" />
+            </label>
+          </div>
+        </section>
 
-      <section class="panel songs-panel">
-        <div class="panel-title">
-          <h2>今日推荐歌曲</h2>
-          <span id="songCount">中英混合</span>
-        </div>
-        <ol id="songList"></ol>
+        <section class="panel advice-panel">
+          <div class="panel-title">
+            <h2>今日建议</h2>
+            <span id="moodTag">uncalibrated</span>
+          </div>
+          <div class="advice-grid">
+            <article>
+              <small>Action</small>
+              <p id="actionText">先写一句真实状态。</p>
+            </article>
+            <article>
+              <small>Care</small>
+              <p id="careText">我会给你一个不夸张的小建议。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel songs-panel">
+          <div class="panel-title">
+            <h2>今日推荐歌曲</h2>
+            <span id="songCount">中英混合</span>
+          </div>
+          <ol id="songList"></ol>
+        </section>
       </section>
     </main>
 
